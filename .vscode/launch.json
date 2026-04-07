@@ -1,0 +1,80 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        
+        
+        {
+            "name": "pygls: Debug Server",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "${config:pygls.server.debugHost}",
+                "port": "${config:pygls.server.debugPort}"
+            },
+            "justMyCode": false
+        },
+        {
+            "name": "Debug Extension (hidden)",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceRoot}",
+                "--folder-uri=${workspaceRoot}/examples/servers",
+            ],
+            "outFiles": [
+                "${workspaceRoot}/out/**/*.js"
+            ],
+            "presentation": {
+                "hidden": true,
+                "group": "",
+                "order": 4
+            }
+        },
+                {
+            "name": "Python debug server (hidden)",
+            "type": "debugpy",
+            "request": "attach",
+          "connect": {
+                "host": "${config:pygls.server.debugHost}",
+                "port": "${config:pygls.server.debugPort}"
+            },
+            "justMyCode": false,
+            "presentation": {
+                "hidden": true,
+                "group": "",
+                "order": 4
+            }
+    }, 
+    {           "name": "pygls: Debug Client",
+                "type": "extensionHost",
+                "request": "launch",
+                "runtimeExecutable": "${execPath}",
+                "args": [
+                "--extensionDevelopmentPath=${workspaceRoot",
+                "--folder-uri=${workspaceRoot}/examples/servers",
+            ],
+            "outFiles": [
+                "${workspaceRoot}/out/**/*.js"
+            ],
+            "preLaunchTask": {
+                "type": "npm",
+                "script": "watch"
+            },
+        }
+    ],
+     "compounds": [
+        {
+            "name": "Debug Extension and Python",
+            "configurations": ["Python debug server (hidden)", "Debug Extension (hidden)"],
+            "stopAll": true,
+            "preLaunchTask": "npm: watch",
+            "presentation": {
+                "hidden": false,
+                "group": "",
+                "order": 1
+            }
+        }
+    ]
+}
+
