@@ -38,7 +38,6 @@ import sys
 from collections import namedtuple
 from yap4py.yapi import Engine, EngineArgs, set_prolog_flag, V
 
-pred_refs = namedtuple("pred_refs","ls uri line position")
 add_dir = namedtuple("add_dir", "ls uri")
 validate_text = namedtuple("validate_text", "uri source")
 complete = namedtuple("complete","prefix")
@@ -99,9 +98,9 @@ class YAPServer(LanguageServer):
                 else:
                     sev=types.DiagnosticSeverity.Error
                 location=types.Range(
-                    start=types.Position(line=i0-1, character=j0+1),
-                    end=types.Position(line=i1-1, character= j1)
-        )
+                    start=types.Position(line=i0-1, character=j0-1),
+                    end=types.Position(line=i1-1, character= j1-1)
+                )
                 diagnostics.append(
                     types.Diagnostic(
                         message  = msg,
@@ -138,7 +137,7 @@ def completions(ls: YAPServer, params: types.Optional[types.CompletionParams] = 
         if  prefix[i] == '_':
             continue
         if i>1 and prefix[i-1:i+1] == "`":
-            continue
+c            continue
     if i==col:
         return []
     try:
@@ -182,6 +181,27 @@ def did_change(ls: YAPServer, params: types.DidOpenTextDocumentParams):
             )
         )
 
+pred_refs = namedtuple("pred_refs","uri line position")
+
+@server.feature(types.TEXT_DOCUMENT_REFERENCES)
+def find_references(ls: YAPServer, params: types.ReferenceParams):
+    """Find references of an object."""
+    ls.items = []
+    URI = params.text_document.uri
+    doc = ls.workspace.get_text_document(URI)
+    current_line = params.position.line
+    i0 = params.position.character
+    try:
+        items = engine.fun(pred_refs(URI, current_line, i0))
+    except Exception as e:
+        print(f'Error ocurred: {e}', file=sys.stderr)
+    print(items )
+    if items == []:
+        return []
+    references = [Types.Location(range=Types.Range(start=Types.Position(line=ll0-1, character=lc0),
+                                            end=Types.Position(line=llf-1, character=llc)),
+                                            uri="file://"+F) for (F, l0, c0, lf,cf, ll0, lc0, llf, llc) in items]
+    return references
 
 @server.command("registerCompletions")
 async def register_completions(ls: YAPServer, *args):
