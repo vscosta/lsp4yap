@@ -24,7 +24,6 @@ prioritize which documents it should be computing the diagnostics for.
 This server scans a document for sums e.g. ``1 + 2 = 3``, highlighting any that are
 either missing answers (warnings) or incorrect (errors).
 """
-import asyncio
 import logging
 from lsprotocol import types
 import uuid
@@ -36,7 +35,7 @@ from pygls.workspace import TextDocument
 import sys
 
 from collections import namedtuple
-from yap4py.yapi import Engine, EngineArgs, set_prolog_flag, V
+from yap4py.yapi import Engine, EngineArgs
 
 add_dir = namedtuple("add_dir", "ls uri")
 validate_text = namedtuple("validate_text", "uri source")
@@ -136,8 +135,8 @@ def completions(ls: YAPServer, params: types.Optional[types.CompletionParams] = 
             continue
         if  prefix[i] == '_':
             continue
-        if i>1 and prefix[i-1:i+1] == "`":
-c            continue
+        #if i>1 and prefix[i-1:i+1] == "'":
+        #    continue
     if i==col:
         return []
     try:
@@ -181,26 +180,85 @@ def did_change(ls: YAPServer, params: types.DidOpenTextDocumentParams):
             )
         )
 
-pred_refs = namedtuple("pred_refs","uri line position")
+document_refs = namedtuple("pred_refs","uri line position")
+
+file_symbols = namedtuple("file_symbols", "uri")
+
+@server.feature(types.TEXT_DOCUMENT_DOCUMENT_SYMBOL)
+def document_symbol(ls: YAPServer, params: types.DocumentSymbolParams):
+    """Return all the symbols defined in the given document."""
+    uri = params.text_document.uri
+    results = [ types.DocumentSymbol(
+            name=name,
+            kind=types.SymbolKind.Class,
+            range=types.Range(
+                start=types.Position(line=line-1, character=0),
+                end=types.Position(line=line, character=0)  
+            ) 
+        #selection_range=range_,
+        #children=[],
+    ) for  (name,line) in engine.fun(file_symbols(uri)) ]
+    return results
+
+workspace_symbols = namedtuple("workspace_symbols", "")
+
+@server.feature(types.WORKSPACE_SYMBOL)
+def workspace_symbol(ls: YAPServer, params: types.DocumentSymbolParams):
+    """Return all the symbols defined in the given document."""
+    symbols = engine.fun(workspace_symbols())
+    results = [ 
+            types.DocumentSymbol(
+                name=name,
+                kind=types.SymbolKind.Class,
+                uri=uri,
+                range=types.Range(
+                    start=types.Position(line=line-1, character=0),
+                    end=types.Position(line=line, character=0),
+            )
+            #selection_range=range_,
+            #children=[],
+        )for (name,line,uri) in symbols ]
+    return results
+
+symbol_at = namedtuple("find_symbol", "line pos")
+defi = namedtuple("defi", "word")
+
+@server.feature(types.TEXT_DOCUMENT_DEFINITION)
+def goto_definition(ls: YAPServer, params: types.TypeDefinitionParams):
+    """Jump to an object's definition."""
+    doc = ls.workspace.get_text_document(params.text_document.uri)
+    line = doc.lines[params.position.line]
+    try:
+        word =  engine.fun(symbol_at(line, params.position.character))
+    except Exception as e:
+        print(f'Error ocurred: {e}', file=sys.stderr)
+    (uri, line) = engine.fun(defi(word))
+    return types.Location(uri=doc.uri,
+            range=types.Range(
+                start=types.Position(line=line-1, character=0),
+                end=types.Position(line=line, character=0),
+            )
+                          )
+
+refs = namedtuple("refs", "word")
 
 @server.feature(types.TEXT_DOCUMENT_REFERENCES)
 def find_references(ls: YAPServer, params: types.ReferenceParams):
     """Find references of an object."""
-    ls.items = []
     URI = params.text_document.uri
-    doc = ls.workspace.get_text_document(URI)
-    current_line = params.position.line
-    i0 = params.position.character
+    doc =ls.workspace.get_text_document(URI)
+    line = doc.lines[params.position.line]
     try:
-        items = engine.fun(pred_refs(URI, current_line, i0))
+        word =  engine.fun(symbol_at(line, params.position.character))
     except Exception as e:
         print(f'Error ocurred: {e}', file=sys.stderr)
+    items = engine.fun(refs(word))
     print(items )
     if items == []:
         return []
-    references = [Types.Location(range=Types.Range(start=Types.Position(line=ll0-1, character=lc0),
-                                            end=Types.Position(line=llf-1, character=llc)),
-                                            uri="file://"+F) for (F, l0, c0, lf,cf, ll0, lc0, llf, llc) in items]
+    references = [types.Location(range=types.Range(start=types.Position(line=l-1, character=0),
+                                            end=types.Position(line=l-1, character=0)),
+                                            uri="file://"+F) for (F, l) in items]
     return references
 
 @server.command("registerCompletions")
