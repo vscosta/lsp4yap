@@ -62,12 +62,11 @@ class YAPServer(LanguageServer):
     """Language server demonstrating "push-model" diagnostics."""
 
     CMD_PROGRESS = "progress"
-    CMD_REGISTER_COMPLETIONS = "registerCompletions"
+    CMD_REGISTER_COMPLETIONS = 
     CMD_SHOW_CONFIGURATION_ASYNC = "showConfigurationAsync"
     CMD_SHOW_CONFIGURATION_CALLBACK = "showConfigurationCallback"
     CMD_SHOW_CONFIGURATION_THREAD = "showConfigurationThread"
-    CMD_UNREGISTER_COMPLETIONS = "unregisterCompletions"
-
+    CMD_UNREGISTER_COMPLETIONS =
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.diagnostics = {}
@@ -186,7 +185,7 @@ file_symbols = namedtuple("file_symbols", "uri")
 
 @server.feature(types.TEXT_DOCUMENT_DOCUMENT_SYMBOL)
 def document_symbol(ls: YAPServer, params: types.DocumentSymbolParams):
-    """Return all the symbols defined in the given document."""
+    """Return all the symbolsb defined in the given document."""
     uri = params.text_document.uri
     results = [ types.DocumentSymbol(
             name=name,
@@ -194,9 +193,12 @@ def document_symbol(ls: YAPServer, params: types.DocumentSymbolParams):
             range=types.Range(
                 start=types.Position(line=line-1, character=0),
                 end=types.Position(line=line, character=0)  
-            ) 
-        #selection_range=range_,
-        #children=[],
+            ),
+            selection_range=types.Range(
+                start=types.Position(line=line-1, character=0),
+                end=types.Position(line=line-1, character=len(name))
+            ),
+            children=[]
     ) for  (name,line) in engine.fun(file_symbols(uri)) ]
     return results
 
@@ -220,23 +222,21 @@ def workspace_symbol(ls: YAPServer, params: types.DocumentSymbolParams):
         )for (name,line,uri) in symbols ]
     return results
 
-symbol_at = namedtuple("find_symbol", "line pos")
-defi = namedtuple("defi", "word")
+symbol_at = namedtuple("symbol_at", "line pos")
+definition = namedtuple("definition", "line column")
 
 @server.feature(types.TEXT_DOCUMENT_DEFINITION)
 def goto_definition(ls: YAPServer, params: types.TypeDefinitionParams):
     """Jump to an object's definition."""
     doc = ls.workspace.get_text_document(params.text_document.uri)
     line = doc.lines[params.position.line]
-    try:
-        word =  engine.fun(symbol_at(line, params.position.character))
-    except Exception as e:
-        print(f'Error ocurred: {e}', file=sys.stderr)
-    (uri, line) = engine.fun(defi(word))
-    return types.Location(uri=doc.uri,
+    v = engine.fun(definition(line, params.position.character))
+    print("v:"+str(v),file=sys.stderr)
+    (def_uri, def_line, _, def_length) = v
+    return types.Location(uri=def_uri,
             range=types.Range(
-                start=types.Position(line=line-1, character=0),
-                end=types.Position(line=line, character=0),
+                start=types.Position(line=def_line, character=0),
+                end=types.Position(line=def_line, character=def_length),
             )
                           )
 
@@ -248,11 +248,7 @@ def find_references(ls: YAPServer, params: types.ReferenceParams):
     URI = params.text_document.uri
     doc =ls.workspace.get_text_document(URI)
     line = doc.lines[params.position.line]
-    try:
-        word =  engine.fun(symbol_at(line, params.position.character))
-    except Exception as e:
-        print(f'Error ocurred: {e}', file=sys.stderr)
-    items = engine.fun(refs(word))
+    items = engine.fun(line, parameteres.position.character)
     print(items )
     if items == []:
         return []
@@ -272,6 +268,7 @@ async def register_completions(ls: YAPServer, *args):
                 register_options={"triggerCharacters": "[':']"},
             )
         ]
+
     )
 
     try:

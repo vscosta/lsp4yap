@@ -52,7 +52,7 @@
                 "runtimeExecutable": "${execPath}",
                 "args": [
                 "--extensionDevelopmentPath=${workspaceRoot",
-                "--folder-uri=${workspaceRoot}/examples/servers",
+                "--folder-uri=${workspaceRoot}",
             ],
             "outFiles": [
                 "${workspaceRoot}/out/**/*.js"
