@@ -62,11 +62,9 @@ class YAPServer(LanguageServer):
     """Language server demonstrating "push-model" diagnostics."""
 
     CMD_PROGRESS = "progress"
-    CMD_REGISTER_COMPLETIONS = 
     CMD_SHOW_CONFIGURATION_ASYNC = "showConfigurationAsync"
     CMD_SHOW_CONFIGURATION_CALLBACK = "showConfigurationCallback"
     CMD_SHOW_CONFIGURATION_THREAD = "showConfigurationThread"
-    CMD_UNREGISTER_COMPLETIONS =
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.diagnostics = {}
@@ -231,8 +229,9 @@ def goto_definition(ls: YAPServer, params: types.TypeDefinitionParams):
     doc = ls.workspace.get_text_document(params.text_document.uri)
     line = doc.lines[params.position.line]
     v = engine.fun(definition(line, params.position.character))
-    print("v:"+str(v),file=sys.stderr)
     (def_uri, def_line, _, def_length) = v
+    if not v:
+        return None
     return types.Location(uri=def_uri,
             range=types.Range(
                 start=types.Position(line=def_line, character=0),
@@ -249,7 +248,6 @@ def find_references(ls: YAPServer, params: types.ReferenceParams):
     doc =ls.workspace.get_text_document(URI)
     line = doc.lines[params.position.line]
     items = engine.fun(line, parameteres.position.character)
-    print(items )
     if items == []:
         return []
     references = [types.Location(range=types.Range(start=types.Position(line=l-1, character=0),
