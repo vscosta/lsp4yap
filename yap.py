@@ -62,11 +62,9 @@ class YAPServer(LanguageServer):
     """Language server demonstrating "push-model" diagnostics."""
 
     CMD_PROGRESS = "progress"
-    CMD_REGISTER_COMPLETIONS = 
     CMD_SHOW_CONFIGURATION_ASYNC = "showConfigurationAsync"
     CMD_SHOW_CONFIGURATION_CALLBACK = "showConfigurationCallback"
     CMD_SHOW_CONFIGURATION_THREAD = "showConfigurationThread"
-    CMD_UNREGISTER_COMPLETIONS =
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.diagnostics = {}
