@@ -229,9 +229,9 @@ def goto_definition(ls: YAPServer, params: types.TypeDefinitionParams):
     doc = ls.workspace.get_text_document(params.text_document.uri)
     line = doc.lines[params.position.line]
     v = engine.fun(definition(line, params.position.character))
-    (def_uri, def_line, _, def_length) = v
     if not v:
         return None
+    (def_uri, def_line, _, def_length) = v
     return types.Location(uri=def_uri,
             range=types.Range(
                 start=types.Position(line=def_line, character=0),
