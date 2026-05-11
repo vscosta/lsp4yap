@@ -1,14 +1,7 @@
-# Pygls Playground
+# lsp4yap: a lsp for YAP
 
-![Screenshot of the pygls-playground extension in action](https://user-images.githubusercontent.com/2675694/260591942-b7001a7b-3081-439d-b702-5f8a489856db.png)
-
-This VSCode extension aims to serve two purposes.
-
-- Provide an environment in which you can easily experiment with the pygls framework by trying some of our example servers - or by writing your own
-
-- Provide a minimal example of what it takes to integrate a pygls powered language server into VSCode.
-
-For an example of a more complete VSCode client, including details on how to bundle your Python code with the VSCode extension itself you may also be interested in Microsoft's [template extension for Python tools](https://github.com/microsoft/vscode-python-tools-extension-template).
+This package introduces a Python based server that interfaces a LSP client to Prolog. The
+Python code is based on the pygls package. The server should be client agnostic. We include here a Visual Code extension based on the pygls examples.
 
 ## Setup
 
@@ -30,6 +23,14 @@ Open a terminal in the repository's root directory
    ```
    python -m pip install -e .
    ```
+1. Install YAP and YAP4PY. Note that you should use the virtual environment from the start. A possible sequence might be:
+  2. ensure you have python-dev, numpy-dev and swig.
+  3. ensure the  virtual environment is the first path your PATH environment variable).
+  4. configure, usually `cd build ; cmake -DCMAKE_INSTALL_PREFIX=/my/favorite/place _-DCMAKE_BUILD_TYPE=Debug"
+  5, `make install`
+  6. `pip install packages/python/yap4py`
+
+
 
 ### Install Client Dependencies
 
@@ -47,37 +48,30 @@ Open terminal in the same directory as this file and execute following commands:
    ```
    Alternatively you can run `npm run watch` if you are going to be actively working on the extension itself.
 
-### Run Extension (VSCode v1.89+)
 
-> [!IMPORTANT]
-> In order for VSCode to recognise `pygls-playground` as a valid extension, you need to complete the setup steps above **before** opening this repo inside VSCode.
-> If you opened VSCode before compiling the extension, you will have to run the `Developer: Reload Window` command through the command palette (`Ctrl+Shift+P`)
+### Install Server in .emacs
 
-1. Open the `pygls` repository in VSCode
+We shall use EGLOT, the FSF supported Emacs client.
 
-1. Goto the `Extensions` tab (`Ctrl+Shift+X`), find the `pygls-playground` extension in the *Recommended* section (not by searching in the marketplace!) and click the `Install Workspace Extension` button.
-   **If the button only says "Install", you've not found the right version of this extension**
+1. Either use M-x eglot to activate eglot on need or
 
-1. You will need to make sure that VSCode is using a virtual environment that contains an installation of `pygls`.
-   The `Python: Select Interpreter` command can be used to pick the correct one.
+2. "Install the following code in the ~/.emacs"
+```
+(with-eval-after-load 'eglot
+  (add-to-list 'eglot-server-programs
+               '(prolog-mode . ("/home/vsc/venv/bin/python" "/home/vsc/github/lsp4yap/yap.py"))))
 
-   Alternatively, you can set the `pygls.server.pythonPath` option in the `.vscode/settings.json` file
+(add-hook 'prolog-mode-hook 'eglot-ensure)
 
-### Run Extension (VSCode v1.88 and older)
 
-1. Open this directory in VS Code
+(setq auto-mode-alist (append '(("\\.pl\\'" . prolog-mode)
+                                 ("\\.yap\\'" . prolog-mode))
+                                auto-mode-alist))
+```
+3. Your Enacs should be 29 or above; also check the path
 
-1. The playground relies on the [Python extension for VSCode](https://marketplace.visualstudio.com/items?itemName=ms-python.python) for choosing the appropriate Python environment in which to run the example language servers.
-   If you haven't already, you will need to install it and reload the window.
+4. check the *EGLOT...
 
-1. Open the Run and Debug view (`ctrl + shift + D`)
-
-1. Select `Launch Client` and press `F5`, this will open a second VSCode window with the `pygls-playground` extension enabled.
-
-1. You will need to make sure that VSCode is using a virtual environment that contains an installation of `pygls`.
-   The `Python: Select Interpreter` command can be used to pick the correct one.
-
-   Alternatively, you can set the `pygls.server.pythonPath` option in the `.vscode/settings.json` file
 
 ## Configuration
 
@@ -85,23 +79,6 @@ By default, the `pygls-playground` extension is configured to run the example `c
 (For best results, try opening the `examples/servers/workspace/sums.txt` file).
 
 However, the `.vscode/settings.json` file in this repository can be used alter this and more.
-
-### Selecting a server
-
-> [!TIP]
-> See the [README](../../../examples/servers/README.md) in the `examples/servers` folder for details on the available servers and which files they work best with.
-
-To select a different example server, change the `pygls.server.launchScript` setting to the name of the server you wish to run
-
-### Selecting the working directory
-
-> [!TIP]
-> Cryptic `Error: spawn /.../python ENOENT` messages are often due to the extension using an incorrect working directory.
-
-If everything works as expected, the `pygls-playground` extension **should** default to using the `examples/servers/` folder as its working directory.
-
-If this is not the case, or you want to change it to something else, you can change the `pygls.server.cwd` option
-
 ### Selecting documents
 
 Language servers typically specialise in a relatively small number of file types, so a client will only ask a server about documents
